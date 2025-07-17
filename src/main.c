@@ -50,13 +50,29 @@ int main(void) {
             update_pos_on_resize();
         prev_win_size = (Vector2){GetScreenWidth(), GetScreenHeight()};
 
+        if (IsFileDropped()) {
+            FilePathList file = LoadDroppedFiles();
+            if (file.count == 1) {
+                UnloadImage(font_atlas_image);
+                UnloadTexture(font_atlas_texture);
+                font_atlas_image = LoadImage(file.paths[0]);
+                font_atlas_texture = LoadTextureFromImage(font_atlas_image);
+                if (font_atlas_texture.id != 0) {
+                    draw_pos = (Vector2){GetScreenWidth() / 2 - font_atlas_texture.width / 2, GetScreenHeight() / 2 - font_atlas_texture.height / 2};
+                    strcpy(current_tex_file_name, TextFormat("%s" PATH_SEPERATOR "%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
+                } else
+                    failed_to_load_file = true;
+            }
+            UnloadDroppedFiles(file);
+        }
+
         if (fileDialogState.SelectFilePressed && !fileDialogState.overwriteDialogOpened) {
             strcpy(file_name, TextFormat("%s" PATH_SEPERATOR "%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
             if (!fileDialogState.saveFileMode) {
                 UnloadImage(font_atlas_image);
                 UnloadTexture(font_atlas_texture);
                 font_atlas_image = LoadImage(file_name);
-                font_atlas_texture = LoadTexture(file_name);
+                font_atlas_texture = LoadTextureFromImage(font_atlas_image);
                 if (font_atlas_texture.id != 0) {
                     draw_pos = (Vector2){GetScreenWidth() / 2 - font_atlas_texture.width / 2, GetScreenHeight() / 2 - font_atlas_texture.height / 2};
                     strcpy(current_tex_file_name, TextFormat("%s" PATH_SEPERATOR "%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
@@ -87,6 +103,11 @@ int main(void) {
                 DrawRectangleLines(draw_pos_int.x, draw_pos_int.y, round(font_atlas_texture.width * zoom), round(font_atlas_texture.height * zoom), BLACK);
 
                 draw_side_menu();
+            } else {
+                int alignment = GuiGetStyle(LABEL, TEXT_ALIGNMENT);
+                GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+                GuiLabel((Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()}, "Open an image or drag and drop one");
+                GuiSetStyle(LABEL, TEXT_ALIGNMENT, alignment);
             }
             if (GuiButton((Rectangle){20, 20, 140, 30}, GuiIconText(ICON_FILE_OPEN, "Open Image"))) {
                 fileDialogState.saveFileMode = false;
